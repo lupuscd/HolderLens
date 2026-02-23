@@ -6,6 +6,10 @@ from main import calculate_weighted_pnl, get_market_info, get_top_holders, get_u
 
 st.set_page_config(page_title="HolderLens", page_icon="🔍", layout="centered")
 
+# Clear Inoput field
+if "url_input" not in st.session_state:
+    st.session_state.url_input = ""
+
 # Header
 st.title("HolderLens")
 st.markdown("Smart money analysis for Polymarket")
