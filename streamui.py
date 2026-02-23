@@ -114,7 +114,7 @@ if url:
 
     # Start over button
     if st.button("↺ Start Over"):
-        st.session_state.url_input = ""
+        del st.session_state.url_input
         st.rerun()
 
 # Discaimer
