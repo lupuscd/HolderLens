@@ -1,8 +1,6 @@
 import time
 
 import streamlit as st
-from pandas._libs.window.indexers import calculate_variable_window_bounds
-from pandas.core.indexes.base import get_unanimous_names
 
 from main import calculate_weighted_pnl, get_market_info, get_top_holders, get_user_pnl
 
