@@ -14,12 +14,18 @@ st.divider()
 # URL input
 url = st.text_input("Polymarket URL", placeholder="https://polymarket.com/event/...")
 
+# Warning
+error_placeholder = st.empty()
+error_placeholder.warning("Only binary markets are supported.")
+
 if url:
     market_info = get_market_info(url)
 
     if not market_info:
         st.error("Could not fetch market info")
         st.stop()
+
+    error_placeholder.empty()
 
     markets = market_info["markets"]
 
@@ -32,51 +38,74 @@ if url:
     st.divider()
 
     if st.button("Run Analysis"):
-        with st.spinner("Fetching top holders..."):
-            all_holders = get_top_holders(condition_id, limit=50)
+        # Create an empty status placeholder
+        status_placeholder = st.empty()
+
+        # Create a placeholder for holders
+        holders_placeholder = st.empty()
+
+        st.divider()
+
+        # Create progress placeholder
+        progress_label = st.empty()
+        progress_bar = st.empty()
+
+        # Create results placeholder
+        results_placeholder = st.empty()
+
+        status_placeholder.info("Fetching top holders...")
+
+        all_holders = get_top_holders(condition_id, limit=50)
 
         yes_holders = [h for h in all_holders if h["outcome_index"] == 0]
         no_holders = [h for h in all_holders if h["outcome_index"] == 1]
 
-        col1, col2 = st.columns(2)
+        with holders_placeholder.container():
+            col1, col2 = st.columns(2)
+            col1.metric("YES Holders", len(yes_holders))
+            col2.metric("NO Holders", len(no_holders))
 
-        col1.metric("YES Holders", len(yes_holders))
-        col2.metric("NO Holders", len(no_holders))
+        progress_label.markdown("**Fetching PnL for YES holders...**")
+        bar = progress_bar.progress(0)
 
-        st.divider()
-
-        st.markdown("**Fetching PnL for YES holders...**")
-
-        yes_bar = st.progress(0)
         for i, holder in enumerate(yes_holders):
             holder["pnl"] = get_user_pnl(holder["address"])
-            yes_bar.progress((i + 1) / len(yes_holders) if yes_holders else 1)
+            bar = progress_bar.progress(
+                (i + 1) / len(yes_holders) if yes_holders else 1
+            )
             time.sleep(0.2)
 
-        st.markdown("**Fetching PnL for NO holders...**")
+        progress_label.markdown("**Fetching PnL for NO holders...**")
+        bar = progress_bar.progress(0)
 
-        yes_bar = st.progress(0)
         for i, holder in enumerate(no_holders):
             holder["pnl"] = get_user_pnl(holder["address"])
-            yes_bar.progress((i + 1) / len(no_holders) if no_holders else 1)
+            bar = progress_bar.progress((i + 1) / len(no_holders) if no_holders else 1)
             time.sleep(0.2)
+
+        # Clear the progress section
+        progress_label.empty()
+        progress_bar.empty()
+
+        # Clear top status message
+        status_placeholder.empty()
 
         yes_wpnl = calculate_weighted_pnl(yes_holders)
         no_wpnl = calculate_weighted_pnl(no_holders)
 
-        st.divider()
+        # Fill results in the reserved spot
+        with results_placeholder.container():
+            st.subheader("Smart Money Signal")
 
-        st.subheader("Smart Money Signal")
+            col3, col4 = st.columns(2)
+            col3.metric("Weighted PnL - YES", f"${yes_wpnl:,.2f}")
+            col4.metric("Weighted PnL - NO", f"${no_wpnl:,.2f}")
 
-        col3, col4 = st.columns(2)
-        col3.metric("Weighted PnL - YES", f"${yes_wpnl:,.2f}")
-        col4.metric("Weighted PnL - NO", f"${no_wpnl:,.2f}")
+            st.divider()
 
-        st.divider()
-
-        if yes_wpnl > no_wpnl:
-            st.success("Smart money leans **YES**")
-        elif no_wpnl > yes_wpnl:
-            st.error("Smart money leans **NO**")
-        else:
-            st.info("Smart money is neutral")
+            if yes_wpnl > no_wpnl:
+                st.success("Smart money leans **YES**")
+            elif no_wpnl > yes_wpnl:
+                st.error("Smart money leans **NO**")
+            else:
+                st.info("Smart money is neutral")
