@@ -109,3 +109,10 @@ if url:
                 st.error("Smart money leans **NO**")
             else:
                 st.info("Smart money is neutral")
+
+# Discaimer
+
+st.divider()
+st.caption(
+    "HolderLens is for informational purposes only. Nothing here is financial advice. Prediction markets are risky and past PnL of holders does not guarantee future performance."
+)

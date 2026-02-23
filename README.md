@@ -25,6 +25,20 @@ A holder with 10,000 shares influences the signal more than a holder with 200 sh
 
 ---
 
+## Interface
+
+HolderLens comes with two ways to run it:
+
+## Command Line
+
+Runmain.py directly and interact through the terminal. Paste a URL, pick a market by number, and results are printed to the console.
+
+## Streamlit UI
+
+Runstreamlit run app.py for a browser-based interface. The UI guides you through the same steps with dropdowns, progress bars, and formatted results. Only YES/NO binary markets are supported — sports markets or any market with more than two outcomes will not produce reliable signals.
+
+---
+
 ## Usage
 
 ```
@@ -60,6 +74,7 @@ Smart money leans YES
 - PnL is **all-time** across all markets, not specific to this market
 - A high PnL holder on the wrong side will still influence the signal
 - Low liquidity markets may not have enough holders above the 100 share threshold to produce a meaningful signal
+- Only binary markets are supported
 
 ---
 
