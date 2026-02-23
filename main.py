@@ -1,6 +1,7 @@
 import time
 
 import requests
+from tqdm import tqdm
 
 
 def get_market_info(url):
@@ -127,7 +128,7 @@ def analyze_market(url, limit=50):
     market_info = get_market_info(url)
 
     if not market_info:
-        print("Could get market info")
+        print("Could not get market info")
         return
 
     markets = market_info["markets"]
@@ -167,14 +168,12 @@ def analyze_market(url, limit=50):
     print(f"Found {len(yes_holders)} YES holders and {len(no_holders)} NO holders")
 
     # Each holder pnl
-    for holder in yes_holders:
-        pnl = get_user_pnl(holder["address"])
-        holder["pnl"] = pnl
+    for holder in tqdm(yes_holders, desc="Fetching YES holders PnL"):
+        holder["pnl"] = get_user_pnl(holder["address"])
         time.sleep(0.2)
 
-    for holder in no_holders:
-        pnl = get_user_pnl(holder["address"])
-        holder["pnl"] = pnl
+    for holder in tqdm(no_holders, desc="Fetching NO holders PnL"):
+        holder["pnl"] = get_user_pnl(holder["address"])
         time.sleep(0.2)
 
     # Weighted pnl
@@ -185,8 +184,8 @@ def analyze_market(url, limit=50):
     print(f"\n{'=' * 50}")
     print("SMART MONEY SIGNAL")
     print(f"{'=' * 50}")
-    print(f"Weighted pnl - YES holders: ${yes_weighted_pnl:>10.2f}")
-    print(f"Weighted pnl - NO holders: ${no_weighted_pnl:>10.2f}")
+    print(f"Weighted pnl - YES holders: ${yes_weighted_pnl:>10,.2f}")
+    print(f"Weighted pnl - NO holders: ${no_weighted_pnl:>10,.2f}")
     print(f"{'=' * 50}")
 
     if yes_weighted_pnl > no_weighted_pnl:
@@ -199,5 +198,6 @@ def analyze_market(url, limit=50):
     print(f"{'=' * 50}\n")
 
 
-url = input("Please enter the polymarket url: ")
-analyze_market(url)
+if __name__ == "__main__":
+    url = input("Please enter the polymarket url: ")
+    analyze_market(url)
