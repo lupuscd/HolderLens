@@ -12,7 +12,9 @@ st.markdown("Smart money analysis for Polymarket")
 st.divider()
 
 # URL input
-url = st.text_input("Polymarket URL", placeholder="https://polymarket.com/event/...")
+url = st.text_input(
+    "Polymarket URL", placeholder="https://polymarket.com/event/...", key="url_input"
+)
 
 # Warning
 error_placeholder = st.empty()
@@ -112,6 +114,7 @@ if url:
 
     # Start over button
     if st.button("↺ Start Over"):
+        st.session_state.url_input = ""
         st.rerun()
 
 # Discaimer
