@@ -110,6 +110,10 @@ if url:
             else:
                 st.info("Smart money is neutral")
 
+    # Start over button
+    if st.button("↺ Start Over"):
+        st.rerun()
+
 # Discaimer
 
 st.divider()
