@@ -74,7 +74,6 @@ Smart money leans YES
 - PnL is **all-time** across all markets, not specific to this market
 - A high PnL holder on the wrong side will still influence the signal
 - Low liquidity markets may not have enough holders above the 100 share threshold to produce a meaningful signal
-- Only binary markets are supported
 
 ---
 
