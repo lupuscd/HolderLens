@@ -9,7 +9,7 @@ def get_market_info(url):
     # Takes a Polymarket URL and returns market info
     # We need the condition_id from it
 
-    slug = url.split("/event/")[-1]
+    slug = url.split("/event/")[-1].split("/")[0]
     gamma_url = f"https://gamma-api.polymarket.com/events?slug={slug}"
 
     response = requests.get(gamma_url)
