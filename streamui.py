@@ -13,6 +13,9 @@ if "url_input" not in st.session_state:
 # Header
 st.title("HolderLens")
 st.markdown("Smart money analysis for Polymarket")
+st.caption(
+    "Fetches up to 50 holders per side. Holders with less than 100 shares are filtered out."
+)
 st.divider()
 
 # URL input
