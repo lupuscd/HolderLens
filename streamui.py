@@ -2,7 +2,13 @@ import time
 
 import streamlit as st
 
-from main import calculate_weighted_pnl, get_market_info, get_top_holders, get_user_pnl
+from main import (
+    calculate_weighted_pnl,
+    get_market_info,
+    get_top_holders,
+    get_user_pnl,
+    group_holders_by_outcome,
+)
 
 st.set_page_config(page_title="HolderLens", page_icon="🔍", layout="centered")
 
@@ -23,18 +29,12 @@ url = st.text_input(
     "Polymarket URL", placeholder="https://polymarket.com/event/...", key="url_input"
 )
 
-# Warning
-error_placeholder = st.empty()
-error_placeholder.warning("Only binary markets are supported.")
-
 if url:
     market_info = get_market_info(url)
 
     if not market_info:
         st.error("Could not fetch market info")
         st.stop()
-
-    error_placeholder.empty()
 
     markets = market_info["markets"]
 
@@ -43,6 +43,7 @@ if url:
     selected = markets[questions.index(selected_question)]
 
     condition_id = selected["condition_id"]
+    outcomes = selected["outcomes"]
 
     st.divider()
 
@@ -66,58 +67,56 @@ if url:
 
         all_holders = get_top_holders(condition_id, limit=50)
 
-        yes_holders = [h for h in all_holders if h["outcome_index"] == 0]
-        no_holders = [h for h in all_holders if h["outcome_index"] == 1]
+        # Group holders dynamically by outcome
+        grouped_holders = group_holders_by_outcome(all_holders)
 
         with holders_placeholder.container():
-            col1, col2 = st.columns(2)
-            col1.metric("YES Holders", len(yes_holders))
-            col2.metric("NO Holders", len(no_holders))
+            cols = st.columns(len(outcomes))
+            for idx, col in enumerate(cols):
+                label = outcomes[idx] if idx < len(outcomes) else f"Outcome {idx}"
+                count = len(grouped_holders.get(idx, []))
+                col.metric(f"{label} Holders", count)
 
-        progress_label.markdown("**Fetching PnL for YES holders...**")
-        bar = progress_bar.progress(0)
+        # Fetch PnL for each group
+        for idx, holders in grouped_holders.items():
+            label = outcomes[idx] if idx < len(outcomes) else f"Outcome {idx}"
+            progress_label.markdown(f"**Fetching PnL for {label} holders...**")
+            progress_bar.progress(0)
 
-        for i, holder in enumerate(yes_holders):
-            holder["pnl"] = get_user_pnl(holder["address"])
-            bar = progress_bar.progress(
-                (i + 1) / len(yes_holders) if yes_holders else 1
-            )
-            time.sleep(0.2)
+            for i, holder in enumerate(holders):
+                holder["pnl"] = get_user_pnl(holder["address"])
+                progress_bar.progress((i + 1) / len(holders) if holders else 1)
+                time.sleep(0.2)
 
-        progress_label.markdown("**Fetching PnL for NO holders...**")
-        bar = progress_bar.progress(0)
-
-        for i, holder in enumerate(no_holders):
-            holder["pnl"] = get_user_pnl(holder["address"])
-            bar = progress_bar.progress((i + 1) / len(no_holders) if no_holders else 1)
-            time.sleep(0.2)
-
-        # Clear the progress section
         progress_label.empty()
         progress_bar.empty()
-
-        # Clear top status message
         status_placeholder.empty()
 
-        yes_wpnl = calculate_weighted_pnl(yes_holders)
-        no_wpnl = calculate_weighted_pnl(no_holders)
+        # Calculate weighted PnL per outcome
+        weighted_pnls = {}
+        for idx, holders in grouped_holders.items():
+            label = outcomes[idx] if idx < len(outcomes) else f"Outcome {idx}"
+            weighted_pnls[label] = calculate_weighted_pnl(holders)
 
-        # Fill results in the reserved spot
+        # Fill results
         with results_placeholder.container():
             st.subheader("Smart Money Signal")
 
-            col3, col4 = st.columns(2)
-            col3.metric("Weighted PnL - YES", f"${yes_wpnl:,.2f}")
-            col4.metric("Weighted PnL - NO", f"${no_wpnl:,.2f}")
+            # One column per outcome
+            cols = st.columns(len(outcomes))
+            for i, (label, wpnl) in enumerate(weighted_pnls.items()):
+                cols[i].metric(f"Weighted PnL - {label}", f"${wpnl:,.2f}")
 
             st.divider()
 
-            if yes_wpnl > no_wpnl:
-                st.success("Smart money leans **YES**")
-            elif no_wpnl > yes_wpnl:
-                st.error("Smart money leans **NO**")
-            else:
-                st.info("Smart money is neutral")
+            if weighted_pnls:
+                best = max(weighted_pnls, key=lambda label: weighted_pnls[label])
+                worst = min(weighted_pnls, key=lambda label: weighted_pnls[label])
+
+                if weighted_pnls[best] == weighted_pnls[worst]:
+                    st.info("Smart money is neutral")
+                else:
+                    st.success(f"Smart money leans **{best}**")
 
     # Start over button
     if st.button("↺ Start Over"):

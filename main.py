@@ -1,3 +1,4 @@
+import json
 import time
 
 import requests
@@ -8,8 +9,14 @@ def get_market_info(url):
 
     # Takes a Polymarket URL and returns market info
     # We need the condition_id from it
+    if "/event/" in url:
+        slug = url.split("/event/")[1].split("/")[0]
+    elif "/sports/" in url:
+        slug = url.split("/")[-1]
+    else:
+        print("Unrecognized URL format")
+        return None
 
-    slug = url.split("/event/")[-1].split("/")[0]
     gamma_url = f"https://gamma-api.polymarket.com/events?slug={slug}"
 
     response = requests.get(gamma_url)
@@ -35,6 +42,7 @@ def get_market_info(url):
             {
                 "question": market.get("question"),
                 "condition_id": market.get("conditionId"),
+                "outcomes": json.loads(market.get("outcomes", "[]")),
             }
         )
 
@@ -75,6 +83,15 @@ def get_top_holders(condition_id, limit=50):
             )
 
     return holders
+
+
+def group_holders_by_outcome(holders):
+
+    grouped = {}
+    for holder in holders:
+        idx = holder["outcome_index"]
+        grouped.setdefault(idx, []).append(holder)
+    return grouped
 
 
 def get_user_pnl(address):
@@ -154,6 +171,7 @@ def analyze_market(url, limit=50):
 
     question = selected["question"]
     condition_id = selected["condition_id"]
+    outcomes = selected["outcomes"]
 
     print(f"\n{'=' * 50}")
     print(f"Market: {question}")
@@ -162,38 +180,36 @@ def analyze_market(url, limit=50):
     # Get top holders
     all_holders = get_top_holders(condition_id, limit)
 
-    yes_holders = [h for h in all_holders if h["outcome_index"] == 0]
-    no_holders = [h for h in all_holders if h["outcome_index"] == 1]
+    # Group holders dynamically by outcome
+    grouped_holders = group_holders_by_outcome(all_holders)
 
-    print(f"Found {len(yes_holders)} YES holders and {len(no_holders)} NO holders")
+    for idx, holders in grouped_holders.items():
+        label = outcomes[idx] if idx < len(outcomes) else f"Outcome{idx}"
+        for holder in tqdm(holders, desc=f"Fetching {label} holders PnL"):
+            holder["pnl"] = get_user_pnl(holder["address"])
+            time.sleep(0.2)
 
-    # Each holder pnl
-    for holder in tqdm(yes_holders, desc="Fetching YES holders PnL"):
-        holder["pnl"] = get_user_pnl(holder["address"])
-        time.sleep(0.2)
-
-    for holder in tqdm(no_holders, desc="Fetching NO holders PnL"):
-        holder["pnl"] = get_user_pnl(holder["address"])
-        time.sleep(0.2)
-
-    # Weighted pnl
-    yes_weighted_pnl = calculate_weighted_pnl(yes_holders)
-    no_weighted_pnl = calculate_weighted_pnl(no_holders)
-
-    # Print the results
+    # Calculate weighted PnL per outcome and print results
     print(f"\n{'=' * 50}")
     print("SMART MONEY SIGNAL")
     print(f"{'=' * 50}")
-    print(f"Weighted pnl - YES holders: ${yes_weighted_pnl:>10,.2f}")
-    print(f"Weighted pnl - NO holders: ${no_weighted_pnl:>10,.2f}")
-    print(f"{'=' * 50}")
 
-    if yes_weighted_pnl > no_weighted_pnl:
-        print("Smart money leans YES")
-    elif yes_weighted_pnl < no_weighted_pnl:
-        print("Smart money leans NO")
-    else:
-        print("Smart money is neutral")
+    weighted_pnls = {}
+    for idx, holders in grouped_holders.items():
+        label = outcomes[idx] if idx < len(outcomes) else f"Outcome {idx}"
+        wpnl = calculate_weighted_pnl(holders)
+        weighted_pnls[label] = wpnl
+        print(f"Weighted pnl - {label} holders: ${wpnl:>10,.2f}")
+
+    print(f"{'=' * 50}\n")
+
+    if weighted_pnls:
+        best = max(weighted_pnls, key=lambda label: weighted_pnls[label])
+        worst = min(weighted_pnls, key=lambda label: weighted_pnls[label])
+        if weighted_pnls[best] == weighted_pnls[worst]:
+            print("Smart money is neutral")
+        else:
+            print(f"Smart money leans {best}")
 
     print(f"{'=' * 50}\n")
 
