@@ -25,17 +25,36 @@ A holder with 10,000 shares influences the signal more than a holder with 200 sh
 
 ---
 
-## Interface
+## Installation
+
+**Clone the repository**
+git clone https://github.com/yourusername/holderlens.git
+cd holderlens
+
+**Install dependencies**
+pip install -r requirements.txt
+
+---
+
+## Requirements
+
+- Python 3.14 or higher
+- Internet connection (fetches live data from Polymarket APIs)
+- No API key required
+
+---
+
+## Running HolderLens
 
 HolderLens comes with two ways to run it:
 
 ## Command Line
 
-Runmain.py directly and interact through the terminal. Paste a URL, pick a market by number, and results are printed to the console.
+Run **python main.py** directly and interact through the terminal. Paste a URL, pick a market by number, and results are printed to the console.
 
 ## Streamlit UI
 
-Runstreamlit run app.py for a browser-based interface. The UI guides you through the same steps with dropdowns, progress bars, and formatted results. Only YES/NO binary markets are supported — sports markets or any market with more than two outcomes will not produce reliable signals.
+Run **streamlit run app.py** for a browser-based interface. The UI guides you through the same steps with dropdowns, progress bars, and formatted results.
 
 ---
 
@@ -87,3 +106,9 @@ Smart money leans YES
 ## Disclaimer
 
 HolderLens is for informational purposes only. Nothing here is financial advice. Prediction markets are risky and past PnL of holders does not guarantee future performance.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
